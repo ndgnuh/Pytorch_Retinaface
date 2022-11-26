@@ -2,7 +2,14 @@
 
 I just want to use RetinaFace conveniently. Most if not all of the codes in this repository are adapted from https://github.com/biubug6/Pytorch_Retinaface.
 
-### Contents
+## Changes
+- remove the torch stuffs
+- add onnx based inference
+- add auto model downloading
+- adapt the detect script for easier usage
+- add bounding box squaring option
+
+## Contents
 - [Installation](#installation)
 - [Inference](#inference)
 - [References](#references)
