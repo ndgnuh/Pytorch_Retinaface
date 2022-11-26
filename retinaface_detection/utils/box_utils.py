@@ -1,4 +1,3 @@
-import torch
 import numpy as np
 
 
@@ -10,8 +9,8 @@ def point_form(boxes):
     Return:
         boxes: (tensor) Converted xmin, ymin, xmax, ymax form of boxes.
     """
-    return torch.cat((boxes[:, :2] - boxes[:, 2:]/2,     # xmin, ymin
-                     boxes[:, :2] + boxes[:, 2:]/2), 1)  # xmax, ymax
+    return np.concatenate((boxes[:, :2] - boxes[:, 2:]/2,     # xmin, ymin
+                           boxes[:, :2] + boxes[:, 2:]/2), 1)  # xmax, ymax
 
 
 def center_size(boxes):
@@ -22,8 +21,8 @@ def center_size(boxes):
     Return:
         boxes: (tensor) Converted xmin, ymin, xmax, ymax form of boxes.
     """
-    return torch.cat((boxes[:, 2:] + boxes[:, :2])/2,  # cx, cy
-                     boxes[:, 2:] - boxes[:, :2], 1)  # w, h
+    return np.concatenate((boxes[:, 2:] + boxes[:, :2])/2,  # cx, cy
+                          boxes[:, 2:] - boxes[:, :2], 1)  # w, h
 
 
 def intersect(box_a, box_b):
@@ -39,11 +38,11 @@ def intersect(box_a, box_b):
     """
     A = box_a.size(0)
     B = box_b.size(0)
-    max_xy = torch.min(box_a[:, 2:].unsqueeze(1).expand(A, B, 2),
-                       box_b[:, 2:].unsqueeze(0).expand(A, B, 2))
-    min_xy = torch.max(box_a[:, :2].unsqueeze(1).expand(A, B, 2),
-                       box_b[:, :2].unsqueeze(0).expand(A, B, 2))
-    inter = torch.clamp((max_xy - min_xy), min=0)
+    max_xy = np.min(box_a[:, 2:].unsqueeze(1).expand(A, B, 2),
+                    box_b[:, 2:].unsqueeze(0).expand(A, B, 2))
+    min_xy = np.max(box_a[:, :2].unsqueeze(1).expand(A, B, 2),
+                    box_b[:, :2].unsqueeze(0).expand(A, B, 2))
+    inter = np.clamp((max_xy - min_xy), min=0)
     return inter[:, :, 0] * inter[:, :, 1]
 
 
@@ -136,14 +135,18 @@ def match(threshold, truths, priors, variances, labels, landms, loc_t, conf_t, l
     best_prior_idx.squeeze_(1)
     best_prior_idx_filter.squeeze_(1)
     best_prior_overlap.squeeze_(1)
-    best_truth_overlap.index_fill_(0, best_prior_idx_filter, 2)  # ensure best prior
+    best_truth_overlap.index_fill_(
+        0, best_prior_idx_filter, 2)  # ensure best prior
     # TODO refactor: index  best_prior_idx with long tensor
     # ensure every gt matches with its prior of max overlap
     for j in range(best_prior_idx.size(0)):     # 判别此anchor是预测哪一个boxes
         best_truth_idx[best_prior_idx[j]] = j
-    matches = truths[best_truth_idx]            # Shape: [num_priors,4] 此处为每一个anchor对应的bbox取出来
-    conf = labels[best_truth_idx]               # Shape: [num_priors]      此处为每一个anchor对应的label取出来
-    conf[best_truth_overlap < threshold] = 0    # label as background   overlap<0.35的全部作为负样本
+    # Shape: [num_priors,4] 此处为每一个anchor对应的bbox取出来
+    matches = truths[best_truth_idx]
+    # Shape: [num_priors]      此处为每一个anchor对应的label取出来
+    conf = labels[best_truth_idx]
+    # label as background   overlap<0.35的全部作为负样本
+    conf[best_truth_overlap < threshold] = 0
     loc = encode(matches, priors, variances)
 
     matches_landm = landms[best_truth_idx]
@@ -172,9 +175,10 @@ def encode(matched, priors, variances):
     g_cxcy /= (variances[0] * priors[:, 2:])
     # match wh / prior wh
     g_wh = (matched[:, 2:] - matched[:, :2]) / priors[:, 2:]
-    g_wh = torch.log(g_wh) / variances[1]
+    g_wh = np.log(g_wh) / variances[1]
     # return target for smooth_l1_loss
-    return torch.cat([g_cxcy, g_wh], 1)  # [num_priors,4]
+    return np.concatenate([g_cxcy, g_wh], 1)  # [num_priors,4]
+
 
 def encode_landm(matched, priors, variances):
     """Encode the variances from the priorbox layers into the ground truth boxes
@@ -190,12 +194,16 @@ def encode_landm(matched, priors, variances):
     """
 
     # dist b/t match center and prior's center
-    matched = torch.reshape(matched, (matched.size(0), 5, 2))
-    priors_cx = priors[:, 0].unsqueeze(1).expand(matched.size(0), 5).unsqueeze(2)
-    priors_cy = priors[:, 1].unsqueeze(1).expand(matched.size(0), 5).unsqueeze(2)
-    priors_w = priors[:, 2].unsqueeze(1).expand(matched.size(0), 5).unsqueeze(2)
-    priors_h = priors[:, 3].unsqueeze(1).expand(matched.size(0), 5).unsqueeze(2)
-    priors = torch.cat([priors_cx, priors_cy, priors_w, priors_h], dim=2)
+    matched = np.reshape(matched, (matched.size(0), 5, 2))
+    priors_cx = priors[:, 0].unsqueeze(1).expand(
+        matched.size(0), 5).unsqueeze(2)
+    priors_cy = priors[:, 1].unsqueeze(1).expand(
+        matched.size(0), 5).unsqueeze(2)
+    priors_w = priors[:, 2].unsqueeze(1).expand(
+        matched.size(0), 5).unsqueeze(2)
+    priors_h = priors[:, 3].unsqueeze(1).expand(
+        matched.size(0), 5).unsqueeze(2)
+    priors = np.concatenate([priors_cx, priors_cy, priors_w, priors_h], axis=2)
     g_cxcy = matched[:, :, :2] - priors[:, :, :2]
     # encode variance
     g_cxcy /= (variances[0] * priors[:, :, 2:])
@@ -205,26 +213,6 @@ def encode_landm(matched, priors, variances):
     return g_cxcy
 
 
-# Adapted from https://github.com/Hakuyume/chainer-ssd
-def decode(loc, priors, variances):
-    """Decode locations from predictions using priors to undo
-    the encoding we did for offset regression at train time.
-    Args:
-        loc (tensor): location predictions for loc layers,
-            Shape: [num_priors,4]
-        priors (tensor): Prior boxes in center-offset form.
-            Shape: [num_priors,4].
-        variances: (list[float]) Variances of priorboxes
-    Return:
-        decoded bounding box predictions
-    """
-
-    boxes = torch.cat((
-        priors[:, :2] + loc[:, :2] * variances[0] * priors[:, 2:],
-        priors[:, 2:] * torch.exp(loc[:, 2:] * variances[1])), 1)
-    boxes[:, :2] -= boxes[:, 2:] / 2
-    boxes[:, 2:] += boxes[:, :2]
-    return boxes
 
 def decode_landm(pre, priors, variances):
     """Decode landm from predictions using priors to undo
@@ -238,12 +226,16 @@ def decode_landm(pre, priors, variances):
     Return:
         decoded landm predictions
     """
-    landms = torch.cat((priors[:, :2] + pre[:, :2] * variances[0] * priors[:, 2:],
-                        priors[:, :2] + pre[:, 2:4] * variances[0] * priors[:, 2:],
-                        priors[:, :2] + pre[:, 4:6] * variances[0] * priors[:, 2:],
-                        priors[:, :2] + pre[:, 6:8] * variances[0] * priors[:, 2:],
-                        priors[:, :2] + pre[:, 8:10] * variances[0] * priors[:, 2:],
-                        ), dim=1)
+    landms = np.concatenate((priors[:, :2] + pre[:, :2] * variances[0] * priors[:, 2:],
+                             priors[:, :2] + pre[:, 2:4] *
+                             variances[0] * priors[:, 2:],
+                             priors[:, :2] + pre[:, 4:6] *
+                             variances[0] * priors[:, 2:],
+                             priors[:, :2] + pre[:, 6:8] *
+                             variances[0] * priors[:, 2:],
+                             priors[:, :2] + pre[:, 8:10] *
+                             variances[0] * priors[:, 2:],
+                             ), axis=1)
     return landms
 
 
@@ -255,7 +247,7 @@ def log_sum_exp(x):
         x (Variable(tensor)): conf_preds from conf layers
     """
     x_max = x.data.max()
-    return torch.log(torch.sum(torch.exp(x-x_max), 1, keepdim=True)) + x_max
+    return np.log(np.sum(np.exp(x-x_max), 1, keepdim=True)) + x_max
 
 
 # Original author: Francisco Massa:
@@ -273,14 +265,14 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
         The indices of the kept boxes with respect to num_priors.
     """
 
-    keep = torch.Tensor(scores.size(0)).fill_(0).long()
+    keep = np.array(scores.size(0)).fill_(0).long()
     if boxes.numel() == 0:
         return keep
     x1 = boxes[:, 0]
     y1 = boxes[:, 1]
     x2 = boxes[:, 2]
     y2 = boxes[:, 3]
-    area = torch.mul(x2 - x1, y2 - y1)
+    area = np.mul(x2 - x1, y2 - y1)
     v, idx = scores.sort(0)  # sort in ascending order
     # I = I[v >= 0.01]
     idx = idx[-top_k:]  # indices of the top-k largest vals
@@ -291,7 +283,7 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
     w = boxes.new()
     h = boxes.new()
 
-    # keep = torch.Tensor()
+    # keep = np.Tensor()
     count = 0
     while idx.numel() > 0:
         i = idx[-1]  # index of current largest val
@@ -302,29 +294,27 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
             break
         idx = idx[:-1]  # remove kept element from view
         # load bboxes of next highest vals
-        torch.index_select(x1, 0, idx, out=xx1)
-        torch.index_select(y1, 0, idx, out=yy1)
-        torch.index_select(x2, 0, idx, out=xx2)
-        torch.index_select(y2, 0, idx, out=yy2)
+        np.index_select(x1, 0, idx, out=xx1)
+        np.index_select(y1, 0, idx, out=yy1)
+        np.index_select(x2, 0, idx, out=xx2)
+        np.index_select(y2, 0, idx, out=yy2)
         # store element-wise max with next highest score
-        xx1 = torch.clamp(xx1, min=x1[i])
-        yy1 = torch.clamp(yy1, min=y1[i])
-        xx2 = torch.clamp(xx2, max=x2[i])
-        yy2 = torch.clamp(yy2, max=y2[i])
+        xx1 = np.clamp(xx1, min=x1[i])
+        yy1 = np.clamp(yy1, min=y1[i])
+        xx2 = np.clamp(xx2, max=x2[i])
+        yy2 = np.clamp(yy2, max=y2[i])
         w.resize_as_(xx2)
         h.resize_as_(yy2)
         w = xx2 - xx1
         h = yy2 - yy1
         # check sizes of xx1 and xx2.. after each iteration
-        w = torch.clamp(w, min=0.0)
-        h = torch.clamp(h, min=0.0)
+        w = np.clamp(w, min=0.0)
+        h = np.clamp(h, min=0.0)
         inter = w*h
         # IoU = i / (area(a) + area(b) - i)
-        rem_areas = torch.index_select(area, 0, idx)  # load remaining areas)
+        rem_areas = np.index_select(area, 0, idx)  # load remaining areas)
         union = (rem_areas - inter) + area[i]
         IoU = inter/union  # store result in iou
         # keep only elements with an IoU <= overlap
         idx = idx[IoU.le(overlap)]
     return keep, count
-
-
