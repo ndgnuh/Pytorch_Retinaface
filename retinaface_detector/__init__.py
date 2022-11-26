@@ -31,7 +31,8 @@ def detect(model: InferenceSession,
            confidence_threshold: float = 0.02,
            top_k: int = 5000,
            keep_top_k: int = 750,
-           nms_threshold: float = 0.4):
+           nms_threshold: float = 0.4,
+           score_threshold: float = 0.6):
     im_height, im_width = image.shape[:2]
     scale = np.array([im_width, im_height, im_width, im_height])
 
@@ -94,6 +95,12 @@ def detect(model: InferenceSession,
     boxes = detections[:, :4].round().astype(int)
     scores = detections[:, 4]
 
+    # filter score threshold
+    idx, = np.where(scores >= score_threshold)
+    boxes = boxes[idx]
+    scores = scores[idx]
+    landmarks = landmarks[idx]
+
     return boxes, scores, landmarks
 
 
@@ -106,6 +113,7 @@ class FaceDetector:
                  model: str = 'mobilenet',
                  onnx_providers: Collection[str] = get_available_providers(),
                  config: dict = None,
+                 score_threshold: float = 0.6,
                  confidence_threshold: float = 0.02,
                  top_k: int = 5000,
                  keep_top_k: int = 750,
@@ -125,6 +133,7 @@ class FaceDetector:
         self.keep_top_k = keep_top_k
         self.nms_threshold = nms_threshold
         self.square_box = square_box
+        self.score_threshold = score_threshold
 
     def __call__(self, image: np.ndarray):
         boxes, scores, landmarks = detect(
@@ -134,7 +143,8 @@ class FaceDetector:
             top_k=self.top_k,
             keep_top_k=self.keep_top_k,
             nms_threshold=self.nms_threshold,
-            confidence_threshold=self.confidence_threshold)
+            confidence_threshold=self.confidence_threshold,
+            score_threshold=self.score_threshold)
         if self.square_box is not None:
             boxes = np.array([
                 square_box(box, mode=self.square_box)

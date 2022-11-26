@@ -50,6 +50,7 @@ FaceDetector(
   top_k: int = 5000, # refer to https://github.com/biubug6/Pytorch_Retinaface/blob/master/detect.py
   keep_top_k: int = 750, # refer to https://github.com/biubug6/Pytorch_Retinaface/blob/master/detect.py
   nms_threshold: float = 0.4, # refer to https://github.com/biubug6/Pytorch_Retinaface/blob/master/detect.py
+  score_threshold: float = 0.6, # refer to https://github.com/biubug6/Pytorch_Retinaface/blob/master/detect.py, it's visualize_threshold there
   square_box: Optional[str] = None) # does nothing by default, see below for details
 ```
 
