@@ -1,4 +1,5 @@
-cfg_mnet = {
+mobilenet = {
+    'url': 'https://github.com/ndgnuh/retinaface_detector/releases/download/first-working-version/FaceDetector-MobileNet0.25.onnx',
     'name': 'mobilenet0.25',
     'min_sizes': [[16, 32], [64, 128], [256, 512]],
     'steps': [8, 16, 32],
@@ -18,7 +19,8 @@ cfg_mnet = {
     'out_channel': 64
 }
 
-cfg_re50 = {
+resnet50 = {
+    'url': 'https://github.com/ndgnuh/retinaface_detector/releases/download/first-working-version/FaceDetector-ResNet50.onnx',
     'name': 'Resnet50',
     'min_sizes': [[16, 32], [64, 128], [256, 512]],
     'steps': [8, 16, 32],
@@ -38,3 +40,4 @@ cfg_re50 = {
     'out_channel': 256
 }
 
+# vim: nowrap

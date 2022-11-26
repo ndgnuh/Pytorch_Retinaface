@@ -13,9 +13,24 @@ I just want to use RetinaFace conveniently. Most if not all of the codes in this
 pip install git+https://github.com/ndgnuh/retinaface_detector
 ```
 
+Install ONNX runtime:
+```shell
+pip install onnxruntime-gpu
+# or
+pip install onnxruntime
+```
+
 ## Inference
 
-(TBA)
+```python
+from retinaface_detector import FaceDetector
+import cv2
+
+detector = FaceDetector()
+cap = cv2.VideoCapture(0)
+_, frame = cap.read()
+boxes, scores, landmarks = detector(frame)
+```
 
 ## References
 - [FaceBoxes](https://github.com/zisianw/FaceBoxes.PyTorch)

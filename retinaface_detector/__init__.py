@@ -1,12 +1,10 @@
 import numpy as np
 import cv2
-from .config import cfg_mnet, cfg_re50
+from typing import Dict, Collection
+from onnxruntime import InferenceSession, get_available_providers
+from . import configs
+from . import download
 from .utils import priorbox, nms, decode, decode_landm
-try:
-    from onnxruntime import InferenceSession
-except Exception:
-    print(
-        "Install this package with [cpu] or [gpu] option, or install onnxruntime manually")
 
 
 def prepare_input(image: np.ndarray):
@@ -28,6 +26,7 @@ def prepare_input(image: np.ndarray):
 
 
 def detect(model: InferenceSession,
+           config: Dict,
            image: np.ndarray,
            confidence_threshold: float = 0.02,
            top_k: int = 5000,
@@ -45,17 +44,15 @@ def detect(model: InferenceSession,
         }
     )
 
-    # TODO: cfg
-    cfg = cfg_mnet
-    prior_data = priorbox(cfg, image_size=(640, 640))
-    boxes = decode(locations[0], prior_data, cfg['variance'])
+    prior_data = priorbox(config, image_size=(640, 640))
+    boxes = decode(locations[0], prior_data, config['variance'])
 
     # Rescale bounding boxes
     boxes = boxes * scale
     scores = confidences[0, :, 1]
 
     # Rescale landmarks
-    landmarks = decode_landm(landmarks[0], prior_data, cfg['variance'])
+    landmarks = decode_landm(landmarks[0], prior_data, config['variance'])
     scale1 = np.array([
         input_image.shape[3],
         input_image.shape[2],
@@ -98,3 +95,40 @@ def detect(model: InferenceSession,
     scores = detections[:, 4]
 
     return boxes, scores, landmarks
+
+
+def get_model_path(url):
+    filename = path.basename(url)
+
+
+class FaceDetector:
+    def __init__(self,
+                 model: str = 'mobilenet',
+                 onnx_providers: Collection[str] = get_available_providers(),
+                 config: dict = None,
+                 confidence_threshold: float = 0.02,
+                 top_k: int = 5000,
+                 keep_top_k: int = 750,
+                 nms_threshold: float = 0.4):
+
+        if config is None:
+            config = getattr(configs, model)
+
+        self.config = config
+        self.model = InferenceSession(
+            download.download_model(config['url']),
+            providers=onnx_providers
+        )
+        self.confidence_threshold = confidence_threshold
+        self.top_k = top_k
+        self.keep_top_k = keep_top_k
+        self.nms_threshold = nms_threshold
+
+    def __call__(self, image: np.ndarray):
+        return detect(self.model,
+                      self.config,
+                      image=image,
+                      top_k=self.top_k,
+                      keep_top_k=self.keep_top_k,
+                      nms_threshold=self.nms_threshold,
+                      confidence_threshold=self.confidence_threshold)
