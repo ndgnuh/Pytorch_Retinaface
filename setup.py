@@ -29,9 +29,9 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name="retinaface_detection",  # Required
+    name="retinaface_detector",  # Required
 
-    description='Quick and dirty retina face detection module',
+    description='Quick and dirty face detector using retinaface',
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
@@ -76,7 +76,7 @@ setup(
     # When your source code is in a subdirectory under the project root, e.g.
     # `src/`, it is necessary to specify the `package_dir` argument.
     package_dir={
-        "retinaface_detection": "retinaface_detection"
+        "retinaface_detector": "retinaface_detector"
     },  # Optional
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
