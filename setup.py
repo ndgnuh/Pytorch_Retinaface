@@ -28,7 +28,7 @@ setup(
     author_email="ndgnuh@protonmail.com",
     keywords="onnx, retina face, face detection",
     # package_dir={"": "retinaface_detector"},
-    packages=find_packages(include="retinaface_detector"),
+    packages=["retinaface_detector"],
     install_requires=[
         "requests",
         "numpy",
