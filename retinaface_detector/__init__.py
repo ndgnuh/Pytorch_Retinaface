@@ -1,10 +1,10 @@
 import numpy as np
 import cv2
-from typing import Dict, Collection
+from typing import Dict, Collection, Optional
 from onnxruntime import InferenceSession, get_available_providers
 from . import configs
 from . import download
-from .utils import priorbox, nms, decode, decode_landm
+from .utils import priorbox, nms, decode, decode_landm, square_box
 
 
 def prepare_input(image: np.ndarray):
@@ -109,7 +109,8 @@ class FaceDetector:
                  confidence_threshold: float = 0.02,
                  top_k: int = 5000,
                  keep_top_k: int = 750,
-                 nms_threshold: float = 0.4):
+                 nms_threshold: float = 0.4,
+                 square_box: Optional[str] = None):
 
         if config is None:
             config = getattr(configs, model)
@@ -123,12 +124,25 @@ class FaceDetector:
         self.top_k = top_k
         self.keep_top_k = keep_top_k
         self.nms_threshold = nms_threshold
+        self.square_box = square_box
 
     def __call__(self, image: np.ndarray):
-        return detect(self.model,
-                      self.config,
-                      image=image,
-                      top_k=self.top_k,
-                      keep_top_k=self.keep_top_k,
-                      nms_threshold=self.nms_threshold,
-                      confidence_threshold=self.confidence_threshold)
+        boxes, scores, landmarks = detect(
+            self.model,
+            self.config,
+            image=image,
+            top_k=self.top_k,
+            keep_top_k=self.keep_top_k,
+            nms_threshold=self.nms_threshold,
+            confidence_threshold=self.confidence_threshold)
+        if self.square_box is not None:
+            boxes = np.array([
+                square_box(box, mode=self.square_box)
+                for box in boxes
+            ])
+
+        return boxes, scores, landmarks
+
+    def crop(self, frame, box):
+        x1, y1, x2, y2 = box
+        return frame[y1:y2, x1:x2, ...]

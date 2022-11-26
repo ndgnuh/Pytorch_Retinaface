@@ -119,3 +119,39 @@ def nms(dets, thresh):
         order = order[inds + 1]
 
     return keep
+
+
+def square_box(box, mode):
+    """
+    Modify the bounding box so that it is squared
+
+    `box`: x1 y1 x2 y2 tuple
+    `mode`: how to get the square size
+    - `max`: max of box width, height
+    - `min`: min of box width, height
+    - `avg`: average of box width, height
+    """
+    # If the first argument is a box
+    x1, y1, x2, y2 = box
+
+    w = x2 - x1
+    h = y2 - y1
+    if mode == "max":
+        sz = max(w, h) // 2
+    elif mode == "min":
+        sz = min(w, h) // 2
+    elif mode == "avg":
+        sz = (w + h) // 4
+    else:
+        raise ValueError(
+            f"Unsupported mode {mode}, valid values are 'max', 'min' and 'avg"
+        )
+
+    # New coordinate
+    cx = (x1 + x2) // 2
+    cy = (y1 + y2) // 2
+    x1 = max(cx - sz, 0)
+    x2 = cx + sz
+    y1 = max(cy - sz, 0)
+    y2 = cy + sz
+    return x1, y1, x2, y2
