@@ -29,7 +29,7 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name="retina_face_detection",  # Required
+    name="retinaface_detection",  # Required
 
     description='Quick and dirty retina face detection module',
 
@@ -76,9 +76,7 @@ setup(
     # When your source code is in a subdirectory under the project root, e.g.
     # `src/`, it is necessary to specify the `package_dir` argument.
     package_dir={
-        "models": "models",
-        "layers": "layers",
-        "utils": "utils"
+        "retinaface_detection": "retinaface_detection"
     },  # Optional
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
@@ -89,7 +87,7 @@ setup(
     #
     #   py_modules=["my_module"],
     #
-    packages=find_packages(where="."),  # Required
+    # packages=find_packages(where="re"),  # Required
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. See
