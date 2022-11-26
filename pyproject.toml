@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "retinaface_detector"
+version = "1.0.2"
+dependencies = [
+    "requests",
+    "numpy",
+    "opencv-python",
+]
+
+[tool.setuptools]
+packages = ["retinaface_detector"]
