@@ -39,10 +39,10 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version="0.1.0",  # Required
+    version="1.0.0",  # Required
     long_description=long_description,  # Optional
     long_description_content_type="text/markdown",
-    url="https://github.com/ndgnuh/Pytorch_Retinaface",
+    url="https://github.com/ndgnuh/retinaface_detector",
     author="ndgnuh",  # Optional
     author_email="ndgnuh@protonmail.com",  # Optional
     classifiers=[  # Optional
