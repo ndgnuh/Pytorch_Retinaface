@@ -14,7 +14,7 @@ def prepare_input(image: np.ndarray):
     # convert to float32
     # for some reasons, they did not normalize the image to 0..1
     image = image - np.array([104, 117, 123])
-    image = image.astype('float32')
+    image = image.astype("float32")
 
     # To c, h, w
     image = image.transpose((2, 0, 1))
@@ -25,46 +25,48 @@ def prepare_input(image: np.ndarray):
     return image
 
 
-def detect(model: InferenceSession,
-           config: Dict,
-           image: np.ndarray,
-           confidence_threshold: float = 0.02,
-           top_k: int = 5000,
-           keep_top_k: int = 750,
-           nms_threshold: float = 0.4,
-           score_threshold: float = 0.6):
+def detect(
+    model: InferenceSession,
+    config: Dict,
+    image: np.ndarray,
+    confidence_threshold: float = 0.02,
+    top_k: int = 5000,
+    keep_top_k: int = 750,
+    nms_threshold: float = 0.4,
+    score_threshold: float = 0.6,
+):
     im_height, im_width = image.shape[:2]
     scale = np.array([im_width, im_height, im_width, im_height])
 
     # Forward
     input_image = prepare_input(image)
     locations, confidences, landmarks = model.run(
-        None,
-        {
-            model.get_inputs()[0].name: input_image
-        }
+        None, {model.get_inputs()[0].name: input_image}
     )
 
     prior_data = priorbox(config, image_size=(640, 640))
-    boxes = decode(locations[0], prior_data, config['variance'])
+    boxes = decode(locations[0], prior_data, config["variance"])
 
     # Rescale bounding boxes
     boxes = boxes * scale
     scores = confidences[0, :, 1]
 
     # Rescale landmarks
-    landmarks = decode_landm(landmarks[0], prior_data, config['variance'])
-    scale1 = np.array([
-        input_image.shape[3],
-        input_image.shape[2],
-        input_image.shape[3],
-        input_image.shape[2],
-        input_image.shape[3],
-        input_image.shape[2],
-        input_image.shape[3],
-        input_image.shape[2],
-        input_image.shape[3],
-        input_image.shape[2]])
+    landmarks = decode_landm(landmarks[0], prior_data, config["variance"])
+    scale1 = np.array(
+        [
+            input_image.shape[3],
+            input_image.shape[2],
+            input_image.shape[3],
+            input_image.shape[2],
+            input_image.shape[3],
+            input_image.shape[2],
+            input_image.shape[3],
+            input_image.shape[2],
+            input_image.shape[3],
+            input_image.shape[2],
+        ]
+    )
     landmarks = landmarks * scale1
 
     # ignore low scores
@@ -80,9 +82,9 @@ def detect(model: InferenceSession,
     scores = scores[order]
 
     # do NMS
-    detections = np.hstack(
-        [boxes, scores[:, np.newaxis]]
-    ).astype(np.float32, copy=False)
+    detections = np.hstack([boxes, scores[:, np.newaxis]]).astype(
+        np.float32, copy=False
+    )
     keep = nms(detections, nms_threshold)
     detections = detections[keep, :]
     landmarks = landmarks[keep]
@@ -91,12 +93,12 @@ def detect(model: InferenceSession,
     detections = detections[:keep_top_k, :]
     landmarks = landmarks[:keep_top_k, :]
 
-    # boxes
-    boxes = detections[:, :4].round().astype(int)
+    # Descale boxes again
+    boxes = detections[:, :4].round() / scale
     scores = detections[:, 4]
 
     # filter score threshold
-    idx, = np.where(scores >= score_threshold)
+    (idx,) = np.where(scores >= score_threshold)
     boxes = boxes[idx]
     scores = scores[idx]
     landmarks = landmarks[idx]
@@ -109,24 +111,26 @@ def get_model_path(url):
 
 
 class FaceDetector:
-    def __init__(self,
-                 model: str = 'mobilenet',
-                 onnx_providers: Collection[str] = get_available_providers(),
-                 config: dict = None,
-                 score_threshold: float = 0.6,
-                 confidence_threshold: float = 0.02,
-                 top_k: int = 5000,
-                 keep_top_k: int = 750,
-                 nms_threshold: float = 0.4,
-                 square_box: Optional[str] = None):
+    """Face Detector"""
 
+    def __init__(
+        self,
+        model: str = "mobilenet",
+        onnx_providers: Collection[str] = get_available_providers(),
+        config: dict = None,
+        score_threshold: float = 0.6,
+        confidence_threshold: float = 0.02,
+        top_k: int = 5000,
+        keep_top_k: int = 750,
+        nms_threshold: float = 0.4,
+        square_box: Optional[str] = None,
+    ):
         if config is None:
             config = getattr(configs, model)
 
         self.config = config
         self.model = InferenceSession(
-            download.download_model(config['url']),
-            providers=onnx_providers
+            download.download_model(config["url"]), providers=onnx_providers
         )
         self.confidence_threshold = confidence_threshold
         self.top_k = top_k
@@ -144,12 +148,10 @@ class FaceDetector:
             keep_top_k=self.keep_top_k,
             nms_threshold=self.nms_threshold,
             confidence_threshold=self.confidence_threshold,
-            score_threshold=self.score_threshold)
+            score_threshold=self.score_threshold,
+        )
         if self.square_box is not None:
-            boxes = np.array([
-                square_box(box, mode=self.square_box)
-                for box in boxes
-            ])
+            boxes = np.array([square_box(box, mode=self.square_box) for box in boxes])
 
         return boxes, scores, landmarks
 
